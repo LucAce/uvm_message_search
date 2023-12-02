@@ -1,7 +1,7 @@
 # SystemVerilog UVM Message Search Utility
 
 Cross platform, Python 3 Tk based search utility to extract SystemVerilog UVM style message
-from trasncript files using one or more search terms.
+from transcript files using one or more search terms.
 
 ### Python 3 Library Dependencies:
 
