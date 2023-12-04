@@ -122,7 +122,8 @@ class SearchGUI:
     #--------------------------------------------------------------------------
     def main_window(self, parent, elements):
         parent.title("UVM Message Search Utility")
-        parent.minsize(1024, 720)
+        parent.minsize(650, 720)
+        parent.geometry("650x720")
 
         parent = ttk.Frame(parent, padding="5 5 5 5")
         parent.grid(column=0, row=0, sticky=(tk.NS, tk.EW))
@@ -424,7 +425,7 @@ class SearchGUI:
 
         # Scrolling Text
         sfe["SCROLLED_TEXT_ENTRY"] = ScrolledText(sfe["SUBFRAME"], state='disabled')
-        sfe["SCROLLED_TEXT_ENTRY"].pack(padx=5, ipady=2, fill=tk.BOTH, expand=True)
+        sfe["SCROLLED_TEXT_ENTRY"].pack(padx=5, pady=(0,10), ipady=0, fill=tk.BOTH, expand=True)
         sfe["SCROLLED_TEXT_ENTRY"].configure(wrap='none')
 
         return sfe
