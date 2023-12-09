@@ -259,14 +259,14 @@ class SearchGUI:
         sfe["ENTRY"].append(entry)
 
         # + Button
-        sfe["BUTTON_OR"] = tk.Button(
+        sfe["BUTTON_ADD_SEARCH"] = tk.Button(
             sfe["SUBFRAME_INNER"],
             text="+",
             justify=tk.CENTER,
             width=1,
             command=self.search_additional_fields
         )
-        sfe["BUTTON_OR"].grid(column=2, row=0, ipadx=5, ipady=0, sticky=tk.E)
+        sfe["BUTTON_ADD_SEARCH"].grid(column=2, row=0, ipadx=5, ipady=0, sticky=tk.E)
 
         # Search Button
         sfe["BUTTON_SEARCH"] = tk.Button(
@@ -335,6 +335,10 @@ class SearchGUI:
         )
         sfe[key]["SPACING"].grid(column=3, row=key, ipadx=5, ipady=0, sticky=tk.E)
 
+        # Disable the "+" button when there are 9 additional search entries (for total of 10)
+        if len(sfe) >= 9:
+            self.elements["SEARCH_SUBFRAME"]["BUTTON_ADD_SEARCH"].configure(state='disabled')
+
     #--------------------------------------------------------------------------
     # Function: search_fewer_fields
     # Remove a search entry.
@@ -353,6 +357,10 @@ class SearchGUI:
         sfe[key]["SPACING"].destroy()
         del sfe[key]
         del self.search_string_entries[key]
+
+        # Re-enable the "+" button if there are less than 9 additional search entries
+        if len(sfe) < 9:
+            self.elements["SEARCH_SUBFRAME"]["BUTTON_ADD_SEARCH"].configure(state='normal')
 
     #--------------------------------------------------------------------------
     # Function: toggle_search_case_sensitivity
@@ -424,7 +432,7 @@ class SearchGUI:
         sfe["OPTIONS_SHOW_LINE_NUMBERS"]   .pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
 
         # Scrolling Text
-        sfe["SCROLLED_TEXT_ENTRY"] = ScrolledText(sfe["SUBFRAME"], state='disabled')
+        sfe["SCROLLED_TEXT_ENTRY"] = ScrolledText(sfe["SUBFRAME"], state='disabled', height=3)
         sfe["SCROLLED_TEXT_ENTRY"].pack(padx=5, pady=(0,10), ipady=0, fill=tk.BOTH, expand=True)
         sfe["SCROLLED_TEXT_ENTRY"].configure(wrap='none')
 
