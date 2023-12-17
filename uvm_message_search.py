@@ -106,6 +106,9 @@ class SearchGUI:
         self.search_type = tk.StringVar()
         self.search_type.set("text_search")
 
+        self.search_context = tk.IntVar()
+        self.search_context.set(0)
+
         self.search_always_show_errors   = tk.BooleanVar(value=True)
         self.search_always_show_warnings = tk.BooleanVar(value=True)
         self.search_show_line_numbers    = tk.BooleanVar(value=True)
@@ -122,8 +125,8 @@ class SearchGUI:
     #--------------------------------------------------------------------------
     def main_window(self, parent, elements):
         parent.title("UVM Message Search Utility")
-        parent.minsize(650, 720)
-        parent.geometry("650x720")
+        parent.minsize(700, 720)
+        parent.geometry("700x720")
 
         parent = ttk.Frame(parent, padding="5 5 5 5")
         parent.grid(column=0, row=0, sticky=(tk.NS, tk.EW))
@@ -227,11 +230,23 @@ class SearchGUI:
             text='Case Sensitive',
             variable=self.search_case_sensitive
         )
+        # Context Selection
+        sfe["OPTIONS_CONTEXT_DIVIDER"] = ttk.Label(sfe["OPTIONS_FRAME"], text='|')
+        sfe["OPTIONS_CONTEXT_LABEL"]   = ttk.Label(sfe["OPTIONS_FRAME"], text='Context Messages')
+
+        sfe["OPTIONS_CONTEXT"] = ttk.Spinbox(
+            sfe["OPTIONS_FRAME"],
+            from_=0, to=10, width=3,
+            textvariable=self.search_context
+        )
 
         # Pack Radio Buttons and Checkbutton
-        sfe["OPTIONS_TEXT_SEARCH"]   .pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
-        sfe["OPTIONS_REGEX_SEARCH"]  .pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
-        sfe["OPTIONS_CASE_SENSITIVE"].pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
+        sfe["OPTIONS_TEXT_SEARCH"]    .pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
+        sfe["OPTIONS_REGEX_SEARCH"]   .pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
+        sfe["OPTIONS_CASE_SENSITIVE"] .pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
+        sfe["OPTIONS_CONTEXT_DIVIDER"].pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
+        sfe["OPTIONS_CONTEXT_LABEL"]  .pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
+        sfe["OPTIONS_CONTEXT"]        .pack(padx=5, pady=0, fill=tk.X, expand=False, side=tk.LEFT)
 
         # Inner Frame (Grid Layout)
         sfe["SUBFRAME_INNER"] = ttk.Frame(sfe["SUBFRAME"], padding="0 0 0 0", borderwidth=0)
@@ -554,6 +569,8 @@ class SearchGUI:
         else:
             search_options["SEARCH_REGEX"]          = False
 
+        search_options["SEARCH_CONTEXT"] = int(self.search_context.get())
+
         for key,value in self.search_string_entries.items():
             if value.get() == "":
                 continue
@@ -620,12 +637,15 @@ class SearchFile:
         search_strings,
         search_options=dict()
     ):
-        buffer  = []
-        file    = []
-        text    = []
-        matches = dict()
-        match   = False
-        last    = False
+        messages    = []
+        buffer      = []
+        file        = []
+        text        = []
+        matches     = dict()
+        match       = False
+        last        = False
+        context     = 0
+        line_number = 0
 
         # Local Matching Strings
         end_of_test_string = END_OF_TEST
@@ -641,6 +661,7 @@ class SearchFile:
         always_show_errors    = False
         always_show_warnings  = False
         show_line_numbers     = False
+        search_context        = 0
 
         # Decode search options
         if "SEARCH_CASE_SENSITIVE" in search_options.keys() and \
@@ -668,6 +689,9 @@ class SearchFile:
             search_regex          = True
             search_case_sensitive = True
 
+        if "SEARCH_CONTEXT" in search_options.keys():
+            search_context = int(search_options["SEARCH_CONTEXT"])
+
         logging.debug("Searching File: "              + file_name)
         logging.debug("Search Regex: "                + str(search_regex))
         logging.debug("Search Case Sensitive: "       + str(search_case_sensitive))
@@ -675,6 +699,7 @@ class SearchFile:
         logging.debug("Search Always Show Errors: "   + str(always_show_errors))
         logging.debug("Search Always Show Warnings: " + str(always_show_warnings))
         logging.debug("Search Show Line Numbers: "    + str(show_line_numbers))
+        logging.debug("Search Context Lines: "        + str(search_context))
 
         for search_string in search_strings:
             logging.debug("Search For: " + str(search_string))
@@ -690,7 +715,6 @@ class SearchFile:
 
         # Store the number of search strings
         search_strings_count = len(search_strings)
-        text.append(SEPERATION + "\n")
 
         # Convert to lower case if enabled
         if not search_case_sensitive:
@@ -704,7 +728,6 @@ class SearchFile:
                 search_strings[i] = search_strings[i].lower()
 
         # Search the file's contents
-        line_number = 0
         for line in file:
             line_number += 1
 
@@ -721,20 +744,63 @@ class SearchFile:
             if not search_case_sensitive:
                 fline = fline.lower()
 
-            # Return if the end of the test has been reached
+            # Message header, end of test message, or end of file found
+            if fline.startswith(uvm_message_string) or \
+               end_of_test_string in fline:
+
+                # Add buffer to the message list
+                if len(buffer) > 0:
+                    messages.append(buffer.copy())
+
+                # Clear the buffer
+                buffer = []
+
+                # Maintain the list of messages to the size of the context + 1
+                messages = messages[((search_context+1) * -1):]
+
+                # If a match was found, print the message and any context
+                if match or context > 0:
+                    # Add visual cue that there is a break
+                    if not last:
+                        last = False
+                        text.append(SEPERATION + "\n")
+
+                    # Print all the stored messages
+                    for message in messages:
+                        for (location, entry) in message:
+                            if show_line_numbers:
+                                text.append(str(location) + ": " + entry + "\n")
+                            else:
+                                text.append(entry + "\n")
+
+                    messages = []
+                    last = True
+                else:
+                    last = False
+
+                # Decrement a context match
+                if context > 0:
+                    context -= 1
+
+                # Reset context match on match
+                if match:
+                    context = search_context
+
+                # Reset match flag
+                match = False
+
+            # Return if the end of the test message is seen
             if end_of_test_string in fline:
+                file     = []
+                messages = []
+                buffer   = []
                 return text
 
-            # If line starts with a UVM message header, always restart search
-            if fline.startswith(uvm_message_string):
-                # Set the match flag
-                if match:
-                    last = True
-
-                # Reset the buffer and match flags
-                buffer  = []
-                matches = dict()
-                match   = False
+            # Store the line and line number to the buffer
+            line_number_formated = '{number:{number_size}}'.format(
+                number=line_number, number_size=line_number_width
+            )
+            buffer.append((line_number_formated, line))
 
             # Print Fatal messages, always printed
             if fline.startswith(uvm_fatal_string):
@@ -769,31 +835,39 @@ class SearchFile:
                         if search_string in fline:
                             match = True
 
+        # Print any remaining matches
+        if match or context > 0:
             # Add visual cue that there is a break
-            if last and not match:
+            if not last:
                 last = False
                 text.append(SEPERATION + "\n")
 
-            # Add line to buffer
-            line_number_formated = '{number:{number_size}}'.format(
-                number=line_number, number_size=line_number_width
-            )
-            buffer.append((line_number_formated, line))
+            # Remove the oldest message if it wasn't printed as it
+            # will be an extra message
+            if len(messages) > 0:
+                messages.pop(0)
 
-            # Print the buffer, if match or within a matched message
-            if match:
-                for (location, entry) in buffer:
+            messages = messages[((search_context+1) * -1):]
+
+            # Print all the remaining stored messages
+            for message in messages:
+                for (location, entry) in message:
                     if show_line_numbers:
                         text.append(str(location) + ": " + entry + "\n")
                     else:
                         text.append(entry + "\n")
 
-                    logging.debug(entry)
-                buffer = []
+            # Print the remaining buffer
+            for (location, entry) in buffer:
+                if show_line_numbers:
+                    text.append(str(location) + ": " + entry + "\n")
+                else:
+                    text.append(entry + "\n")
 
         # Search complete
-        file   = []
-        buffer = []
+        file     = []
+        messages = []
+        buffer   = []
 
         return text
 
