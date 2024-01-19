@@ -3,15 +3,6 @@
 Cross platform, Python 3 Tk based search utility to extract SystemVerilog UVM style message
 from transcript files using one or more search terms.
 
-### Python 3 Library Dependencies:
-
-- argparse
-- logging
-- os
-- sys
-- tkinter
-- traceback
-
 ### Usage:
 
 ```bash
