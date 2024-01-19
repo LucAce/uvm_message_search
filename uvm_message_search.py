@@ -797,7 +797,7 @@ class SearchFile:
                 return text
 
             # Store the line and line number to the buffer
-            line_number_formated = '{number:{number_size}}'.format(
+            line_number_formated = '{number:<{number_size}}'.format(
                 number=line_number, number_size=line_number_width
             )
             buffer.append((line_number_formated, line))
