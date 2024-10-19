@@ -572,9 +572,10 @@ class SearchGUI:
         search_options["SEARCH_CONTEXT"] = int(self.search_context.get())
 
         for key,value in self.search_string_entries.items():
-            if value.get() == "":
+            if str(value.get()).strip() == "":
+                logging.debug("Ignoring Search Entry: \"" + str(value.get()) + "\"")
                 continue
-            logging.debug("Searching For: " + value.get())
+            logging.debug("Searching For: \"" + str(value.get()) + "\"")
             search_strings.append(str(value.get()))
 
         search_results = SearchFile.search(str(file_name), search_strings, search_options)
@@ -669,7 +670,8 @@ class SearchFile:
             search_case_sensitive = True
 
         if "SEARCH_EXCLUSIVE" in search_options.keys() and \
-            search_options["SEARCH_EXCLUSIVE"] == True:
+            search_options["SEARCH_EXCLUSIVE"] == True and \
+            len(search_strings) > 1:
             search_exclusive = True
 
         if "SHOW_ERRORS" in search_options.keys() and \
@@ -702,7 +704,7 @@ class SearchFile:
         logging.debug("Search Context Lines: "        + str(search_context))
 
         for search_string in search_strings:
-            logging.debug("Search For: " + str(search_string))
+            logging.debug("Search For: \"" + str(search_string) + "\"")
 
         # Open file and read contents
         file_lines = 0
