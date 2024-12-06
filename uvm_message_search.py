@@ -66,7 +66,7 @@ logging.basicConfig(
 )
 
 # Separation String
-SEPERATION  = "..."
+SEPARATION  = "..."
 
 # UVM End of Test String
 END_OF_TEST = "# --- UVM Report Summary ---"
@@ -765,7 +765,7 @@ class SearchFile:
                     # Add visual cue that there is a break
                     if not last:
                         last = False
-                        text.append(SEPERATION + "\n")
+                        text.append(SEPARATION + "\n")
 
                     # Print all the stored messages
                     for message in messages:
@@ -842,7 +842,7 @@ class SearchFile:
             # Add visual cue that there is a break
             if not last:
                 last = False
-                text.append(SEPERATION + "\n")
+                text.append(SEPARATION + "\n")
 
             # Remove the oldest message if it wasn't printed as it
             # will be an extra message
